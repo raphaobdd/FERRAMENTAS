@@ -1,0 +1,56 @@
+# Prompt para testes automáticos no Codespace
+
+Objetivo: executar uma bateria mínima de testes contra a API após a modificação (BLAST, HMMER, DIAMOND).
+
+Passos sugeridos (rodar no Codespace / terminal do workspace):
+
+1) Build da imagem (já testado aqui):
+	docker build -t ferramentas:local .
+
+2) Rodar container mapeando volumes para databases:
+	docker run --rm -p 8000:8000 -v $(pwd)/data/databases:/data/databases ferramentas:local
+
+3) Testes com `curl` (exemplos):
+
+- BLAST (supondo `mydb` já presente em /data/databases):
+	curl -X POST -F "query=@sequences.faa" -F "db_name=mydb" http://localhost:8000/blast/run
+
+- DIAMOND (supondo `mydb.dmnd` presente):
+	curl -X POST -F "query=@sequences.faa" -F "db_name=mydb" http://localhost:8000/diamond/run
+
+- HMMER (supondo `db.hmm` presente):
+	curl -X POST -F "query=@sequences.faa" -F "hmm_db=db.hmm" http://localhost:8000/hmmer/run
+
+4) Asserções esperadas:
+- Os endpoints retornam texto TSV puro (não JSON) em caso de sucesso.
+- Erros 400 se DB não existir; 500 para erros internos.
+
+5) (Opcional) Script de teste automatizado (bash):
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE="http://localhost:8000"
+SEQ="sequences.faa"
+
+# Test DIAMOND
+resp=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -F "query=@${SEQ}" -F "db_name=mydb" ${BASE}/diamond/run)
+code=$(echo "$resp" | tr -d '\n' | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
+body=$(echo "$resp" | sed -E 's/HTTPSTATUS:([0-9]{3})$//')
+echo "DIAMOND status: $code; body length: ${#body}"
+
+# Test HMMER
+resp=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -F "query=@${SEQ}" -F "hmm_db=db.hmm" ${BASE}/hmmer/run)
+code=$(echo "$resp" | tr -d '\n' | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
+echo "HMMER status: $code"
+
+# Test BLAST
+resp=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -F "query=@${SEQ}" -F "db_name=mydb" ${BASE}/blast/run)
+code=$(echo "$resp" | tr -d '\n' | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
+echo "BLAST status: $code"
+
+# Fim
+
+---
+
+Observação: Troque `mydb`, `db.hmm` e `sequences.faa` conforme os dados presentes em `data/databases`.

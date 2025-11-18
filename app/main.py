@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Depends
 from app.auth import verify_api_key
-from app.routers import blast, hmmer, eggnog
+from app.routers import blast, hmmer, diamond
 
 app = FastAPI()
 
@@ -11,7 +11,7 @@ async def api_key_middleware(request: Request, call_next):
 
 app.include_router(blast.router)
 app.include_router(hmmer.router)
-app.include_router(eggnog.router)
+app.include_router(diamond.router)
 
 @app.get("/")
 def root():

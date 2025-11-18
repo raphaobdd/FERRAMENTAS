@@ -20,17 +20,17 @@ WORKDIR /tmp
 RUN DIAMOND_VERSION="2.1.8" && \
     wget -q -O diamond.tar.gz "https://github.com/bbuchfink/diamond/releases/download/v${DIAMOND_VERSION}/diamond-linux64.tar.gz" && \
     tar -xzf diamond.tar.gz && \
-    mv diamond /usr/local/bin/diamond && \
+    if [ -f diamond ]; then \
+        mv diamond /usr/local/bin/diamond; \
+    elif ls diamond*/diamond 1>/dev/null 2>&1; then \
+        mv diamond*/diamond /usr/local/bin/diamond; \
+    else \
+        echo "diamond binary not found after extraction"; exit 1; \
+    fi && \
     chmod +x /usr/local/bin/diamond && \
-    rm diamond.tar.gz
+    rm -rf diamond*
 
-# Clonar e instalar eggNOG-mapper a partir do repositório oficial (instala via python)
-RUN git clone https://github.com/eggnogdb/eggnog-mapper.git /usr/local/eggnog && \
-    cd /usr/local/eggnog && \
-    python3 -m pip install --no-cache-dir .
-
-# Link útil
-RUN ln -s /usr/local/eggnog/emapper.py /usr/local/bin/emapper.py || true
+# eggNOG removed intentionally
 
 WORKDIR /app
 

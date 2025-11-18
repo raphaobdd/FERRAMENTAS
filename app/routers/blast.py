@@ -22,7 +22,7 @@ def run_blast(query: UploadFile, db_name: str):
     db_path = f"{DATABASE_DIR}{db_name}"
 
     cmd = [
-        f"{BLAST_BIN}blastp",
+        BLAST_BIN,
         "-query", query_path,
         "-db", db_path,
         "-outfmt", "6"
